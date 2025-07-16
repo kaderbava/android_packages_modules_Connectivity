@@ -974,10 +974,22 @@ public class PermissionMonitor {
         // Update uid permission.
         updateAppIdTrafficPermission(uid);
         if (BpfNetMaps.isAtLeast25Q2()) {
-            mBpfNetMaps.removeUidFromLocalNetBlockMap(uid);
-            if (hasSdkSandbox(uid)) mBpfNetMaps.removeUidFromLocalNetBlockMap(
-                    sProcessShim.toSdkSandboxUid(uid));
+            try {
+                mBpfNetMaps.removeUidFromLocalNetBlockMap(uid);
+            } catch (NullPointerException e) {
+                Log.w(TAG, "BpfNetMaps.removeUidFromLocalNetBlockMap failed for UID " + uid + ": map is null");
+            }
+
+            try {
+                if (hasSdkSandbox(uid)) {
+                    mBpfNetMaps.removeUidFromLocalNetBlockMap(
+                            sProcessShim.toSdkSandboxUid(uid));
+                }
+            } catch (NullPointerException e) {
+                Log.w(TAG, "BpfNetMaps.removeUidFromLocalNetBlockMap failed for sandbox UID: map is null");
+            }
         }
+
         // Get the appId permission from all users then send the latest permission to netd.
         final int appId = UserHandle.getAppId(uid);
         final int appIdTrafficPerm = getAppIdTrafficPermission(appId);
@@ -989,6 +1001,7 @@ public class PermissionMonitor {
         // mUidToNetworkPerm to check if the package can bypass VPN.
         updateVpnUid(uid, false /* add */);
         updateLockdownUid(uid, false /* add */);
+
         // If the package has been removed from all users on the device, clear it form mAllApps.
         if (mPackageManager.getNameForUid(uid) == null) {
             mAllApps.remove(appId);
@@ -1028,6 +1041,7 @@ public class PermissionMonitor {
             }
         }
     }
+
 
     private static int getNetdPermissionMask(String[] requestedPermissions,
                                              int[] requestedPermissionsFlags) {
