@@ -39,7 +39,6 @@
     ERR(NO_STATS_ENTRY)       \
     ERR(NO_LIMIT_ENTRY)       \
     ERR(BELOW_IPV4_MTU)       \
-    ERR(ABOVE_IPV4_PMTU)      \
     ERR(BELOW_IPV6_MTU)       \
     ERR(LIMIT_REACHED)        \
     ERR(CHANGE_HEAD_FAILED)   \
