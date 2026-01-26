@@ -769,28 +769,14 @@ static __always_inline inline uint8_t get_app_permissions(uint32_t uid) {
     return permissions ? *permissions : BPF_PERMISSION_INTERNET;
 }
 
-static __always_inline inline int inet_socket_create(struct bpf_sock* sk,
-                                                     const struct kver_uint kver) {
-    if (KVER_IS_AT_LEAST(kver, 5, 10, 0)) {
-        SkStorageValue *v = bpf_sk_storage_get(sk, 0, BPF_SK_STORAGE_GET_F_CREATE);
-        if (v) v->cookie = bpf_get_sk_cookie(sk);
-    }
+DEFINE_NETD_BPF_PROG_KVER(cgroupsock, inet_create, , 4_14)
+(__unused struct bpf_sock* sk) {
     uint64_t uid = bpf_get_current_uid_gid() & 0xffffffff;
     if (get_app_permissions(uid) & BPF_PERMISSION_INTERNET) {
         return bpf_owner_firewall_match(uid) == PASS ? BPF_ALLOW : BPF_DISALLOW;
     } else {
         return BPF_DISALLOW;
     }
-}
-
-DEFINE_NETD_BPF_PROG_KVER(cgroupsock, inet_create, 5_10, 5_10)
-(struct bpf_sock* sk) {
-    return inet_socket_create(sk, KVER_5_10);
-}
-
-DEFINE_NETD_BPF_PROG_KVER_RANGE(cgroupsock, inet_create, 4_14, 4_14, 5_10)
-(struct bpf_sock* sk) {
-    return inet_socket_create(sk, KVER_4_14);
 }
 
 DEFINE_NETD_BPF_PROG_KVER(cgroupsockrelease, inet_release, , 5_10)
